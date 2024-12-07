@@ -226,6 +226,54 @@ const deleteTodo = async (event) => {
     console.error('Error:', error)
   }
 }
+
+//handle status change
+const handleStatusChange = async (id) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/todos/status/${id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            accept: 'application/json',
+            Authorization: `Bearer ${token.value}`,
+          },
+          
+        },
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        // Handle non-2xx HTTP status codes
+        if (result.status === 422) {
+          console.error('Validation Error:', result.errors)
+          // Display the error message to the user
+        } else {
+          throw new Error('Something went wrong.')
+        }
+      } else {
+        //add new customer to customers array
+        const index = todos.value.findIndex((item) => item.id === id)
+
+        if (index !== -1) {
+          // Directly update the element within the array
+          todos.value.splice(index, 1, {
+            id: result.data.id,
+            title: result.data.title,
+            status: result.data.status
+          })
+        }
+
+        //hide open modal
+        hideModal('customerInfoModal')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+    }
+  }
+
 </script>
 <template>
 
@@ -268,7 +316,11 @@ const deleteTodo = async (event) => {
           <tr v-for="todo in todos" :key="todo.id">
             <td>{{ todo.id }}</td>
             <td>{{ todo.title }}</td>
-            <td>{{ todo.id }}</td>
+            <td>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" :checked="todo.status === 1" @click="handleStatusChange(todo.id)" >
+              </div>
+            </td>
             <td>
               <button
                 type="button"
