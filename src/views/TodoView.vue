@@ -8,14 +8,21 @@ const todos = ref(null)
 const token = ref(null)
 const todosTokenStore = useTodosTokenStore()
 
-//hide the modal function
 const hideModal = (id) => {
   const modal = document.getElementById(id)
-  modal.classList.remove('show') // Remove the 'show' class
-  modal.style.display = 'none' // Hide the modal
-  modal.setAttribute('aria-hidden', 'true') // Update accessibility attributes
-  document.body.classList.remove('modal-open') // Remove the class from body
-  document.querySelector('.modal-backdrop')?.remove() // Remove the backdrop if present
+  if (!modal) return
+
+  // Remove the 'show' class
+  modal.classList.remove('show')
+  modal.style.display = 'none'
+  modal.setAttribute('aria-hidden', 'true')
+
+  // Remove backdrop and body class
+  document.body.classList.remove('modal-open')
+  document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove())
+
+  // Reset body overflow
+  document.body.style.overflow = ''
 }
 
 // Methods to save data in reactive variable
@@ -61,6 +68,7 @@ const title = ref(null)
 const formRefCreateForm = ref(null)
 const createFormValid = ref(null)
 const newTodoCreateErrorMessage = ref(null)
+//form handler for todo create form
 const handleTodoCreateForm = async (event) => {
   event.preventDefault() // Prevent default submission
   const form = formRefCreateForm.value
@@ -165,7 +173,7 @@ const validateFormAndSendToServerEditInfo = async (event) => {
         }
 
         //hide open modal
-        hideModal('customerInfoModal')
+        hideModal('todoInfoEditModal')
       }
     } catch (error) {
       console.error('Error:', error)
@@ -229,82 +237,73 @@ const deleteTodo = async (event) => {
 
 //handle status change
 const handleStatusChange = async (id) => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/todos/status/${id}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            accept: 'application/json',
-            Authorization: `Bearer ${token.value}`,
-          },
-          
-        },
-      )
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/todos/status/${id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        accept: 'application/json',
+        Authorization: `Bearer ${token.value}`,
+      },
+    })
 
-      const result = await response.json()
+    const result = await response.json()
 
-      if (!response.ok) {
-        // Handle non-2xx HTTP status codes
-        if (result.status === 422) {
-          console.error('Validation Error:', result.errors)
-          // Display the error message to the user
-        } else {
-          throw new Error('Something went wrong.')
-        }
+    if (!response.ok) {
+      // Handle non-2xx HTTP status codes
+      if (result.status === 422) {
+        console.error('Validation Error:', result.errors)
+        // Display the error message to the user
       } else {
-        //add new customer to customers array
-        const index = todos.value.findIndex((item) => item.id === id)
-
-        if (index !== -1) {
-          // Directly update the element within the array
-          todos.value.splice(index, 1, {
-            id: result.data.id,
-            title: result.data.title,
-            status: result.data.status
-          })
-        }
-
-        //hide open modal
-        hideModal('customerInfoModal')
+        throw new Error('Something went wrong.')
       }
-    } catch (error) {
-      console.error('Error:', error)
-    }
-  }
+    } else {
+      //add new customer to customers array
+      const index = todos.value.findIndex((item) => item.id === id)
 
+      if (index !== -1) {
+        // Directly update the element within the array
+        todos.value.splice(index, 1, {
+          id: result.data.id,
+          title: result.data.title,
+          status: result.data.status,
+        })
+      }
+    }
+  } catch (error) {
+    console.error('Error:', error)
+  }
+}
 </script>
 <template>
-
-<div class="container-fluid">
-  <div class="row">
-    <!-- New todo create form -->
-    <form class="row needs-validation" ref="formRefCreateForm" @submit="handleTodoCreateForm">
-      <div class="row justify-content-end">
-        <div class="col">
-          <input
-            v-model="title"
-            type="text"
-            class="form-control"
-            :class="{
-              'is-valid': createFormValid,
-              'is-invalid': !createFormValid,
-            }"
-            id="validationCustom03"
-            required
-          />
-          <div class="invalid-feedback" v-if="newTodoCreateErrorMessage">
-            {{ newTodoCreateErrorMessage }}
+  <div class="container-fluid">
+    <div class="row">
+      <!-- New todo create form -->
+      <form class="row needs-validation" ref="formRefCreateForm" @submit="handleTodoCreateForm">
+        <div class="row justify-content-end">
+          <div class="col">
+            <input
+              v-model="title"
+              type="text"
+              class="form-control"
+              :class="{
+                'is-valid': createFormValid,
+                'is-invalid': !createFormValid,
+              }"
+              id="validationCustom03"
+              required
+            />
+            <div class="invalid-feedback" v-if="newTodoCreateErrorMessage">
+              {{ newTodoCreateErrorMessage }}
+            </div>
+          </div>
+          <div class="col">
+            <button class="btn btn-primary btn-sm" type="submit">Add</button>
           </div>
         </div>
-        <div class="col">
-          <button class="btn btn-primary btn-sm" type="submit">Add</button>
-        </div>
-      </div>
-    </form>
-  </div>
-  <div class="row">
+      </form>
+    </div>
+    <div class="row">
       <table class="table">
         <thead>
           <th>id</th>
@@ -318,14 +317,21 @@ const handleStatusChange = async (id) => {
             <td>{{ todo.title }}</td>
             <td>
               <div class="form-check">
-                <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" :checked="todo.status === 1" @click="handleStatusChange(todo.id)" >
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  value=""
+                  id="flexCheckChecked"
+                  :checked="todo.status === 1"
+                  @click="handleStatusChange(todo.id)"
+                />
               </div>
             </td>
             <td>
               <button
                 type="button"
                 data-bs-toggle="modal"
-                data-bs-target="#customerInfoModal"
+                data-bs-target="#todoInfoEditModal"
                 data-bs-backdrop="false"
                 class="btn btn-primary btn-sm me-1"
                 @click="saveInfoToReactiveVariablesForEdit(todo.id, todo.title)"
@@ -346,21 +352,21 @@ const handleStatusChange = async (id) => {
           </tr>
         </tbody>
       </table>
+    </div>
   </div>
-</div>
 
   <!-- Modal for data edit -->
   <div
     class="modal fade"
-    id="customerInfoModal"
+    id="todoInfoEditModal"
     tabindex="-1"
-    aria-labelledby="customerInfoModalLabel"
+    aria-labelledby="todoInfoEditModalLabel"
     aria-hidden="true"
   >
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="customerInfoModalLabel">Edit customer</h5>
+          <h5 class="modal-title" id="todoInfoEditModalLabel">Edit customer</h5>
           <button
             type="button"
             class="btn-close"
@@ -403,13 +409,13 @@ const handleStatusChange = async (id) => {
     class="modal fade"
     id="todoDeleteModal"
     tabindex="-1"
-    aria-labelledby="customerInfoDeleteModalLabel"
+    aria-labelledby="todoDeleteModalLabel"
     aria-hidden="true"
   >
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="customerInfoDeleteModalLabel">Delete todo</h5>
+          <h5 class="modal-title" id="todoDeleteModalLabel">Delete todo</h5>
           <button
             type="button"
             class="btn-close"
