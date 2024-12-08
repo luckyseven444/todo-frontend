@@ -2,12 +2,17 @@
 import { ref, onBeforeMount } from 'vue'
 import { useTodosTokenStore } from '../stores/todos'
 
+const title = ref(null)
+const formRefCreateForm = ref(null)
+const createFormValid = ref(null)
+const newTodoCreateErrorMessage = ref(null)
 const selectedTodoId = ref(null)
 const selectedTodoTitle = ref(null)
 const todos = ref(null)
 const token = ref(null)
 const todosTokenStore = useTodosTokenStore()
 
+//hide modal
 const hideModal = (id) => {
   const modal = document.getElementById(id)
   if (!modal) return
@@ -64,10 +69,7 @@ onBeforeMount(async () => {
   }
 })
 
-const title = ref(null)
-const formRefCreateForm = ref(null)
-const createFormValid = ref(null)
-const newTodoCreateErrorMessage = ref(null)
+
 //form handler for todo create form
 const handleTodoCreateForm = async (event) => {
   event.preventDefault() // Prevent default submission
@@ -116,7 +118,7 @@ const handleTodoCreateForm = async (event) => {
   }
 }
 
-//validate customer edit form and submit
+//validate edit form and submit
 const formRefEdit = ref(null)
 
 const validateFormAndSendToServerEditInfo = async (event) => {
@@ -169,6 +171,7 @@ const validateFormAndSendToServerEditInfo = async (event) => {
           todos.value.splice(index, 1, {
             id: result.data.id,
             title: result.data.title,
+            status: result.data.status
           })
         }
 
@@ -180,12 +183,12 @@ const validateFormAndSendToServerEditInfo = async (event) => {
     }
   }
 }
-
-//delete a customer
-
+//save data to reactive variables from form
 const saveInfoToReactiveVariablesForDelete = (todoId) => {
   selectedTodoId.value = todoId
 }
+
+//delete todo
 const deleteTodo = async (event) => {
   // Form is valid; send the data to the REST API
   event.preventDefault() // Prevent page reload during API call
@@ -314,12 +317,12 @@ const handleStatusChange = async (id) => {
 
     <div class="row">
       <div class="col">
-        
+        <h1 class="display-6">Todo list:</h1>
         <table class="table table-striped table-bordered table-hover w-100">
           <thead class="table-light">
             <tr>
               <th>Title</th>
-              <th>Status</th>
+              <th>Done</th>
               <th class="text-center">Actions</th>
             </tr>
           </thead>
