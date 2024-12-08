@@ -4,7 +4,7 @@ import { useTodosTokenStore } from '../stores/todos'
 
 const title = ref(null)
 const formRefCreateForm = ref(null)
-const createFormValid = ref(null)
+const createFormValid = ref(true)
 const newTodoCreateErrorMessage = ref(null)
 const selectedTodoId = ref(null)
 const selectedTodoTitle = ref(null)
@@ -69,7 +69,6 @@ onBeforeMount(async () => {
   }
 })
 
-
 //form handler for todo create form
 const handleTodoCreateForm = async (event) => {
   event.preventDefault() // Prevent default submission
@@ -78,10 +77,10 @@ const handleTodoCreateForm = async (event) => {
   if (form && !form.checkValidity()) {
     createFormValid.value = false
     event.stopPropagation()
+    form.classList.add('was-validated') // Add Bootstrap validation styles
     return
   }
 
-  form.classList.add('was-validated') // Add Bootstrap validation styles
   const formData = {
     title: title.value,
   }
@@ -100,17 +99,18 @@ const handleTodoCreateForm = async (event) => {
     if (!response.ok) {
       // Parse the error response if the server sends JSON
       const errorDetails = await response.json()
-      console.log('Validation Error first:', errorDetails)
+      //console.log('Validation Error first:', errorDetails)
       createFormValid.value = false
       newTodoCreateErrorMessage.value = errorDetails.message
       // Throw to exit the function early
-      throw new Error(`Error: ${response.status}`)
+      //throw new Error(`Error: ${response.status}`)
     }
 
     // Parse the success response
     const result = await response.json()
     todos.value.push(result.data) //append new todo to todos array
-    form.reset() // Reset the form
+    // form.reset() // Reset the form
+    title.value = null
     createFormValid.value = true
     newTodoCreateErrorMessage.value = null
   } catch (error) {
@@ -171,7 +171,7 @@ const validateFormAndSendToServerEditInfo = async (event) => {
           todos.value.splice(index, 1, {
             id: result.data.id,
             title: result.data.title,
-            status: result.data.status
+            status: result.data.status,
           })
         }
 
@@ -281,6 +281,7 @@ const handleStatusChange = async (id) => {
 
 <template>
   <div class="container">
+    <!--  Todo create form -->
     <div class="row mb-3 p-2">
       <!-- New todo create form -->
       <div class="col text-end">
@@ -289,25 +290,24 @@ const handleStatusChange = async (id) => {
           ref="formRefCreateForm"
           @submit="handleTodoCreateForm"
         >
-          <div class="row g-2 align-items-center">
-            <div class="col-auto">
+          <div class="row g-2 justify-content-center">
+            <div class="col-auto p-1">
               <input
                 v-model="title"
                 type="text"
                 class="form-control"
                 :class="{
-                  'is-valid': createFormValid,
                   'is-invalid': !createFormValid,
                 }"
                 id="validationCustom03"
                 required
                 placeholder="Add todo"
               />
-              <div class="invalid-feedback" v-if="newTodoCreateErrorMessage">
+              <div class="invalid-feedback" v-if="!createFormValid">
                 {{ newTodoCreateErrorMessage }}
               </div>
             </div>
-            <div class="col-auto">
+            <div class="col-auto p-1">
               <button class="btn btn-primary" type="submit">Add</button>
             </div>
           </div>
